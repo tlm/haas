@@ -1,0 +1,31 @@
+blueprint:
+  name: Turn Lights Off When Timer Finishes
+  description: Turn the selected lights off when the provider timer finishes.
+  domain: automation
+  input:
+    lights:
+      name: Lights
+      description: Lights to turn off when timer expires.
+      selector:
+        target:
+          entity:
+            domain: light
+
+    timer:
+      name: Timer
+      description: The timer to turn lights off when finished.
+      selector:
+        entity:
+          multiple: false
+          domain: timer
+
+trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: !input timer
+    id: timer-finished
+action:
+  - service: light.turn_off
+    data: {}
+    target: !input lights
