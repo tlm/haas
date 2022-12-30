@@ -1,0 +1,51 @@
+blueprint:
+  name: Turn Lights On At Sunset Till Time
+  description: Turn the selected lights on at sunset till time x
+  domain: automation
+  input:
+    lights:
+      name: Lights
+      description: Lights to turn off when timer expires.
+      selector:
+        target:
+          entity:
+            domain: light
+    turn_off_at:
+      name: Turn Lights Off At
+      description: The time to turn the lights off at
+      selector:
+        text:
+          type: time
+    timer:
+      name: Timer
+      description: The timer to turn the lights off when finished.
+      selector:
+        entity:
+          multiple: false
+          domain: timer
+    sun_offset:
+      name: Sun Offset
+      description: The offset to apply to sunset
+      selector:
+        text: {}
+variables:
+  turn_off_at: !input turn_off_at
+trigger:
+  - platform: sun
+    event: sunset
+    offset: !input sun_offset
+    id: sunset
+action:
+  - service: light.turn_on
+    data: {}
+    target: !input lights
+  - service: timer.start
+    data:
+      duration: >
+        {% if today_at(turn_off_at) > now() %}
+        {{ (today_at(turn_off_at) - now()).total_seconds() | round }}
+        {% else %}
+        {{ (today_at(turn_off_at) + timedelta(days = 1) - now()).total_seconds() | round }}
+        {% endif %}
+    entity_id: !input timer
+

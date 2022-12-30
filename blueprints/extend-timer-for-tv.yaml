@@ -1,0 +1,42 @@
+blueprint:
+  name: Extend Timer When Tv Is On
+  description: Extend a timer when it is about to run out if a given tv is on.
+  domain: automation
+  input:
+    duration:
+      name: Duration
+      description: The duration to keep the lights on for when someone arrives home
+      selector:
+        duration:
+          enable_day: false
+    timer:
+      name: Timer
+      description: The timer to follow.
+      selector:
+        entity:
+          multiple: false
+          domain: timer
+    tv:
+      name: TV
+      description: The tv to check the state of
+      selector:
+        entity:
+          multiple: false
+          domain: media_player
+          device_class: tv
+trigger_variables:
+  timer: !input timer
+trigger:
+  - platform: template
+    value_template: >
+      {% set f = state_attr(timer, 'finishes_at') %}
+      {{ f != none and (as_timestamp(f) - now().timestamp()) | int < 120 }}
+condition:
+  - condition: state
+    entity_id: !input tv
+    state: 'on'
+action:
+  - service: timer.start
+    data:
+      duration: !input duration
+    entity_id: !input timer

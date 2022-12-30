@@ -1,0 +1,83 @@
+blueprint:
+  name: Turn Lights On When Door Unlocked
+  description: Turn selected lights on when a door changes its state to unlocked.
+  domain: automation
+  input:
+    gating_sensor:
+      name: Gating Sensor
+      description: This is the binary sensor to use to determine if the lights should be turned on.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+    duration:
+      name: Duration
+      description: The duration to keep the lights on for when someone arrives home
+      selector:
+        duration:
+          enable_day: false
+    lights:
+      name: Lights
+      description: Lights to turn off when timer expires.
+      selector:
+        target:
+          entity:
+            domain: light
+    lock:
+      name: Lock
+      description: Lock to trigger on
+      selector:
+        entity:
+          domain: lock
+          multiple: false
+    timer:
+      name: Timer
+      description: The timer to turn the lights off when finished.
+      selector:
+        entity:
+          multiple: false
+          domain: timer
+variables:
+  duration: !input duration
+  timer: !input timer
+trigger:
+  - platform: state
+    entity_id: !input lock
+    to: unlocked
+condition:
+  - condition: state
+    entity_id: !input gating_sensor
+    state: 'on'
+action:
+  - service: light.turn_on
+    data: {}
+    target: !input lights
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: !input timer
+            state: active
+          - condition: template
+            value_template: >
+              {{ as_datetime(state_attr(timer, 'finishes_at')) < (now() + timedelta(hours=duration.hours, minutes=duration.minutes, seconds=duration.seconds)) }}
+      sequence:
+        - service: timer.start
+          data:
+            duration: !input duration
+          entity_id: !input timer
+    - conditions:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: !input timer
+            state: idle
+          - condition: state
+            entity_id: !input timer
+            state: paused
+      sequence:
+        - service: timer.start
+          data:
+            duration: !input duration
+          entity_id: !input timer

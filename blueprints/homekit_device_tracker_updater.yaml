@@ -1,0 +1,30 @@
+blueprint:
+  name: Home Kit Device Tracker Updater
+  description: Will update a device tracker manually based on binary presence sensor. Designed to allow Homekit tracking.
+  domain: automation
+  input:
+    presence_sensor:
+      name: Presence Sensor
+      description: The presence sensor to use for updating the device.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: presence
+          multiple: false
+    device_tracker:
+      name: Device Tracker
+      description: The device tracker to manually update.
+      selector:
+        entity:
+          domain: device_tracker
+          multiple: false
+variables:
+  device_tracker: !input device_tracker
+trigger:
+  - platform: state
+    entity_id: !input presence_sensor
+action:
+  - service: device_tracker.see
+    data_template:
+      dev_id: "{{ device_tracker.split('.')[1] }}"
+      location_name: "{{ 'home' if trigger.to_state.state == 'on' else 'not_home'}}"

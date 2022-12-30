@@ -1,0 +1,89 @@
+blueprint:
+  name: Turn Lights On And Off With Lux Level
+  description: Turn the selected lights on and off when lux level between value.
+  domain: automation
+  input:
+    lights:
+      name: Lights
+      description: Lights to turn on when lux level goes between value.
+      selector:
+        target:
+          entity:
+            domain: light
+    gating_sensor:
+      name: Gating Sensor
+      description: This is the binary sensor to use to determine if lux level triggering should currently be being performed.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+    lux_sensor:
+      name: Lux Sensor
+      description: Entity to use for lux reading
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+          multiple: false
+    lux_level_on:
+      name: Turn On Lux Level
+      description: The lux level to turn lights on
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: lx
+          mode: box
+    lux_level_off:
+      name: Turn Off Lux Level
+      description: The lux level to turn lights off
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: lx
+          mode: box
+trigger:
+  - platform: numeric_state
+    id: below_lux
+    entity_id: !input lux_sensor
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    below: !input lux_level_on
+  - platform: numeric_state
+    id: above_lux
+    entity_id: !input lux_sensor
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    above: !input lux_level_off
+condition:
+  - condition: state
+    entity_id: !input gating_sensor
+    state: 'on'
+action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: below_lux
+      sequence:
+        - service: light.turn_on
+          data:
+            brightness_pct: 100
+            transition: 10
+          target: !input lights
+    - conditions:
+      - condition: trigger
+        id: above_lux
+      sequence:
+        - service: light.turn_off
+          data:
+            transition: 10
+          target: !input lights

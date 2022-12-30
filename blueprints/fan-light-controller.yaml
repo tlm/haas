@@ -1,0 +1,125 @@
+blueprint:
+  name: Fan and Light Controller
+  description: Automation to control an ifan03 base on switches and buttons.
+  domain: automation
+  input:
+    lights:
+      name: Lights
+      description: Lights to turn on when lux level goes between value.
+      selector:
+        target:
+          entity:
+            domain: light
+    light_switch:
+      name: Light Switch
+      description: The light switch entity to turn the associated light on and off with.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+    fan:
+      name: Fan
+      description: The fan to control with the fan button
+      selector:
+        entity:
+          domain: fan
+          multiple: false
+    fan_button:
+      name: Fan Button
+      description: The fan button/switch entity to turn the associated fan on and off with.
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: false
+variables:
+  fan: !input fan
+trigger:
+  - platform: state
+    entity_id: !input light_switch
+    id: light_switch
+    to:
+  - platform: state
+    entity_id: !input fan_button
+    id: fan_on
+    to: "on"
+  - platform: state
+    entity_id: !input fan_button
+    id: fan_off
+    to: "on"
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+action:
+  - choose:
+    # Toggle the light switch
+    - conditions:
+      - condition: trigger
+        id: light_switch
+      sequence:
+        - service: light.toggle
+          data: {}
+          target: !input lights
+
+    # Turn the fan off
+    - conditions:
+      - condition: trigger
+        id: fan_off
+      sequence:
+        - service: fan.turn_off
+          data: {}
+          target:
+            entity_id: !input fan
+
+    # Turn the fan on when it's been off
+    - conditions:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: !input fan
+            state: "off"
+          - condition: trigger
+            id: fan_on
+      sequence:
+        - service: fan.turn_on
+          data:
+            percentage: 100
+          target:
+            entity_id: !input fan
+
+    # Turn the fan on to low from high
+    - conditions:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: !input fan
+            state: "on"
+          - condition: state
+            entity_id: !input fan
+            attribute: percentage
+            state: 100
+          - condition: trigger
+            id: fan_on
+      sequence:
+        - service: fan.set_percentage
+          data:
+            percentage: 33
+          target:
+            entity_id: !input fan
+
+    # Fan control in between
+    - conditions:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: !input fan
+            state: "on"
+          - condition: trigger
+            id: fan_on
+      sequence:
+        - service: fan.increase_speed
+          data:
+            percentage_step: >
+              {{ state_attr(fan, 'percentage_step') }}
+          target:
+            entity_id: !input fan
