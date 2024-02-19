@@ -14,7 +14,7 @@ blueprint:
       name: Light Colour
       description: The colour to turn the light on at.
       selector:
-        colour_rgb: {}
+        color_rgb: {}
     sun_offset:
       name: Sun Offset
       description: The offset to apply to sunset
