@@ -20,8 +20,6 @@ blueprint:
       description: The offset to apply to sunset
       selector:
         text: {}
-variables:
-  turn_off_at: !input turn_off_at
 trigger:
   - platform: sun
     event: sunset
