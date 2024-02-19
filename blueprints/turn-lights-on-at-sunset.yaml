@@ -1,0 +1,34 @@
+blueprint:
+  name: Turn Lights On At Sunset
+  description: Turn the selected lights on at sunset.
+  domain: automation
+  input:
+    lights:
+      name: Lights
+      description: Lights to turn on.
+      selector:
+        target:
+          entity:
+            domain: light
+    colour:
+      name: Light Colour
+      description: The colour to turn the light on at.
+      selector:
+        colour_rgb: {}
+    sun_offset:
+      name: Sun Offset
+      description: The offset to apply to sunset
+      selector:
+        text: {}
+variables:
+  turn_off_at: !input turn_off_at
+trigger:
+  - platform: sun
+    event: sunset
+    offset: !input sun_offset
+    id: sunset
+action:
+  - service: light.turn_on
+    target: !input lights
+    data:
+      rgb_color: !input colour
